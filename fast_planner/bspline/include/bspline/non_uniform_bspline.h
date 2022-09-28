@@ -100,6 +100,9 @@ public:
 
   void recomputeInit();
 
+  Eigen::Vector3d get_next_control_point(Eigen::Vector3d current_position);
+
+
   EIGEN_MAKE_ALIGNED_OPERATOR_NEW
 };
 }  // namespace fast_planner

@@ -25,6 +25,7 @@
 
 #include "bspline/non_uniform_bspline.h"
 #include "nav_msgs/Odometry.h"
+#include "geometry_msgs/Point.h"
 #include "plan_manage/Bspline.h"
 #include "quadrotor_msgs/PositionCommand.h"
 #include "std_msgs/Empty.h"
@@ -32,6 +33,10 @@
 #include <ros/ros.h>
 
 ros::Publisher cmd_vis_pub, pos_cmd_pub, traj_pub;
+
+ros::Publisher pos_cmd_pub_ivsr;
+
+geometry_msgs::Point optimization_point;
 
 nav_msgs::Odometry odom;
 
@@ -94,35 +99,36 @@ void displayTrajWithColor(vector<Eigen::Vector3d> path, double resolution, Eigen
 
 void drawCmd(const Eigen::Vector3d& pos, const Eigen::Vector3d& vec, const int& id,
              const Eigen::Vector4d& color) {
-  visualization_msgs::Marker mk_state;
-  mk_state.header.frame_id = "world";
-  mk_state.header.stamp = ros::Time::now();
-  mk_state.id = id;
-  mk_state.type = visualization_msgs::Marker::ARROW;
-  mk_state.action = visualization_msgs::Marker::ADD;
+  // visualization_msgs::Marker mk_state;
+  // mk_state.header.frame_id = "world";
+  // mk_state.header.stamp = ros::Time::now();
+  // mk_state.id = id;
+  // mk_state.type = visualization_msgs::Marker::ARROW;
+  // mk_state.action = visualization_msgs::Marker::ADD;
 
-  mk_state.pose.orientation.w = 1.0;
-  mk_state.scale.x = 0.1;
-  mk_state.scale.y = 0.2;
-  mk_state.scale.z = 0.3;
+  // mk_state.pose.orientation.w = 1.0;
+  // mk_state.scale.x = 0.1;
+  // mk_state.scale.y = 0.2;
+  // mk_state.scale.z = 0.3;
 
-  geometry_msgs::Point pt;
-  pt.x = pos(0);
-  pt.y = pos(1);
-  pt.z = pos(2);
-  mk_state.points.push_back(pt);
+  // geometry_msgs::Point pt;
+  // pt.x = pos(0);
+  // pt.y = pos(1);
+  // pt.z = pos(2);
+  // mk_state.points.push_back(pt);
 
-  pt.x = pos(0) + vec(0);
-  pt.y = pos(1) + vec(1);
-  pt.z = pos(2) + vec(2);
-  mk_state.points.push_back(pt);
+  // pt.x = pos(0) + vec(0);
+  // pt.y = pos(1) + vec(1);
+  // pt.z = pos(2) + vec(2);
+  // mk_state.points.push_back(pt);
 
-  mk_state.color.r = color(0);
-  mk_state.color.g = color(1);
-  mk_state.color.b = color(2);
-  mk_state.color.a = color(3);
+  // mk_state.color.r = color(0);
+  // mk_state.color.g = color(1);
+  // mk_state.color.b = color(2);
+  // mk_state.color.a = color(3);
 
-  cmd_vis_pub.publish(mk_state);
+  // cmd_vis_pub.publish(mk_state);
+  //HM
 }
 
 void bsplineCallback(plan_manage::BsplineConstPtr msg) {
@@ -210,29 +216,36 @@ void cmdCallback(const ros::TimerEvent& e) {
   Eigen::Vector3d pos, vel, acc, pos_f;
   double yaw, yawdot;
 
-  if (t_cur < traj_duration_ && t_cur >= 0.0) {
-    pos = traj_[0].evaluateDeBoorT(t_cur);
-    vel = traj_[1].evaluateDeBoorT(t_cur);
-    acc = traj_[2].evaluateDeBoorT(t_cur);
+  // if (t_cur < traj_duration_ && t_cur >= 0.0) {
+    // pos = traj_[0].evaluateDeBoorT(t_cur);
+    // pos = traj_[0].evaluateDeBoorT(0.3);
+    pos = traj_[0].get_next_control_point(Eigen::Vector3d(odom.pose.pose.position.x,odom.pose.pose.position.y,odom.pose.pose.position.z));
+    // vel = traj_[1].evaluateDeBoorT(t_cur);
+    // HM fixxing
+    // acc = traj_[2].evaluateDeBoorT(t_cur);
+    vel.setZero();
+    acc.setZero();
     yaw = traj_[3].evaluateDeBoorT(t_cur)[0];
     yawdot = traj_[4].evaluateDeBoorT(t_cur)[0];
 
     double tf = min(traj_duration_, t_cur + 2.0);
     pos_f = traj_[0].evaluateDeBoorT(tf);
 
-  } else if (t_cur >= traj_duration_) {
-    /* hover when finish traj_ */
-    pos = traj_[0].evaluateDeBoorT(traj_duration_);
-    vel.setZero();
-    acc.setZero();
-    yaw = traj_[3].evaluateDeBoorT(traj_duration_)[0];
-    yawdot = traj_[4].evaluateDeBoorT(traj_duration_)[0];
+  // } 
+  // else if (t_cur >= traj_duration_) {
+  //   /* hover when finish traj_ */
+  //   pos = traj_[0].evaluateDeBoorT(traj_duration_);
+  //   vel.setZero();
+  //   acc.setZero();
+  //   yaw = traj_[3].evaluateDeBoorT(traj_duration_)[0];
+  //   yawdot = traj_[4].evaluateDeBoorT(traj_duration_)[0];
 
-    pos_f = pos;
+  //   pos_f = pos;
 
-  } else {
-    cout << "[Traj server]: invalid time." << endl;
-  }
+  // } 
+  // else {
+  //   cout << "[Traj server]: invalid time." << endl;
+  // }
 
   cmd.header.stamp = time_now;
   cmd.header.frame_id = "world";
@@ -266,6 +279,11 @@ void cmdCallback(const ros::TimerEvent& e) {
 
   pos_cmd_pub.publish(cmd);
 
+  optimization_point.x = pos(0);
+  optimization_point.y = pos(1);
+  optimization_point.z = pos(2);
+
+  pos_cmd_pub_ivsr.publish(optimization_point);
   // draw cmd
 
   // drawCmd(pos, vel, 0, Eigen::Vector4d(0, 1, 0, 1));
@@ -292,6 +310,7 @@ int main(int argc, char** argv) {
   cmd_vis_pub = node.advertise<visualization_msgs::Marker>("planning/position_cmd_vis", 10);
   pos_cmd_pub = node.advertise<quadrotor_msgs::PositionCommand>("/position_cmd", 50);
   traj_pub = node.advertise<visualization_msgs::Marker>("planning/travel_traj", 10);
+  pos_cmd_pub_ivsr = node.advertise<geometry_msgs::Point>("optimization_point",10);
 
   ros::Timer cmd_timer = node.createTimer(ros::Duration(0.01), cmdCallback);
   ros::Timer vis_timer = node.createTimer(ros::Duration(0.25), visCallback);

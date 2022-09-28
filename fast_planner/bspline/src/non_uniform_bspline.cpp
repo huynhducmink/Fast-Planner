@@ -481,4 +481,29 @@ void NonUniformBspline::getMeanAndMaxAcc(double& mean_a, double& max_a) {
   mean_a   = mean_acc;
   max_a    = max_acc;
 }
+
+Eigen::Vector3d NonUniformBspline::get_next_control_point(Eigen::Vector3d current_position)
+{
+  Eigen::MatrixXd traj_matrix = control_points_;
+  int nearest_control_point_index = 0;
+  double nearest_control_point_distance = 100000;
+  for (int i = 0; i< control_points_.rows(); i++){
+    Eigen::Vector3d this_control_point (control_points_.coeff(i,0),control_points_.coeff(i,1),control_points_.coeff(i,2));
+    double this_control_point_distance =  sqrt(pow((current_position(0)-this_control_point(0)),2) +pow((current_position(1)-this_control_point(1)),2) +pow((current_position(2)-this_control_point(2)),2));
+    if (this_control_point_distance < nearest_control_point_distance)
+    {
+      nearest_control_point_index = i;
+      nearest_control_point_distance = this_control_point_distance;
+    }
+  }
+  for (int j = nearest_control_point_index; j < control_points_.rows(); j ++){
+    Eigen::Vector3d next_control_point (control_points_.coeff(j,0),control_points_.coeff(j,1),control_points_.coeff(j,2));
+    double next_control_point_distance =  sqrt(pow((current_position(0)-next_control_point(0)),2) +pow((current_position(1)-next_control_point(1)),2) +pow((current_position(2)-next_control_point(2)),2));
+    if (next_control_point_distance > 0.5){
+      return next_control_point;
+    }
+  }
+  return Eigen::Vector3d(control_points_.coeff(nearest_control_point_index,0),control_points_.coeff(nearest_control_point_index,1),control_points_.coeff(nearest_control_point_index,2));
+}
+
 }  // namespace fast_planner

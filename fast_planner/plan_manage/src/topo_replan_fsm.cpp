@@ -240,6 +240,7 @@ void TopoReplanFSM::execFSMCallback(const ros::TimerEvent& e) {
       ros::Time      time_now = ros::Time::now();
       double         t_cur    = (time_now - info->start_time_).toSec();
 
+//HM
       start_pt_  = info->position_traj_.evaluateDeBoorT(t_cur);
       start_vel_ = info->velocity_traj_.evaluateDeBoorT(t_cur);
       start_acc_ = info->acceleration_traj_.evaluateDeBoorT(t_cur);

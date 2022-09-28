@@ -25,6 +25,7 @@
 
 
 #include <plan_manage/kino_replan_fsm.h>
+#include <iostream>
 
 namespace fast_planner {
 
@@ -171,6 +172,8 @@ void KinoReplanFSM::execFSMCallback(const ros::TimerEvent& e) {
       break;
     }
 
+//HM 
+
     case EXEC_TRAJ: {
       /* determine if need to replan */
       LocalTrajData* info     = &planner_manager_->local_data_;
@@ -178,10 +181,12 @@ void KinoReplanFSM::execFSMCallback(const ros::TimerEvent& e) {
       double         t_cur    = (time_now - info->start_time_).toSec();
       t_cur                   = min(info->duration_, t_cur);
 
-      Eigen::Vector3d pos = info->position_traj_.evaluateDeBoorT(t_cur);
+      // Eigen::Vector3d pos = info->position_traj_.evaluateDeBoorT(t_cur);
+      Eigen::Vector3d pos = odom_pos_;
 
       /* && (end_pt_ - pos).norm() < 0.5 */
-      if (t_cur > info->duration_ - 1e-2) {
+      // if (t_cur > info->duration_ - 1e-2) {
+      if ((end_pt_ - pos).norm() < 0.1) {
         have_target_ = false;
         changeFSMExecState(WAIT_TARGET, "FSM");
         return;
@@ -205,7 +210,9 @@ void KinoReplanFSM::execFSMCallback(const ros::TimerEvent& e) {
       ros::Time      time_now = ros::Time::now();
       double         t_cur    = (time_now - info->start_time_).toSec();
 
-      start_pt_  = info->position_traj_.evaluateDeBoorT(t_cur);
+// not current odometry
+      // start_pt_  = info->position_traj_.evaluateDeBoorT(t_cur);
+      start_pt_  = odom_pos_;
       start_vel_ = info->velocity_traj_.evaluateDeBoorT(t_cur);
       start_acc_ = info->acceleration_traj_.evaluateDeBoorT(t_cur);
 

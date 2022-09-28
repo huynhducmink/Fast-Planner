@@ -1,0 +1,13 @@
+Fast Planner note by HM
+
+considering 2 main parts:
+
+Replanning: kino_replan_fsm.cpp
+4 modes: WAIT_TARGET, GEN_NEW_TRAJ, EXEC_TRAJ, REPLAN_TRAJ
+exec_traj and replan_traj không quan tâm đến vị trí hiện tại của drone, nó suy ra vị trí giả định của drone dùng func evaluateDeBoorT và t_cur (current time) trên trajectory đã gen ra
+Sửa thành generate trajectory dựa trên start point là current position
+
+
+Publishing position command: traj_server.cpp
+
+traj_server đang publish command pva vào geometric controller, đổi thành chỉpublish pos command và điều chỉnh để position trong position command luôn đứng trước position hiện tại của drone 1 khoảng cách cố định theo chiều của trajectory đã generate ra trước đó
